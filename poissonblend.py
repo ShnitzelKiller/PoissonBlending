@@ -48,6 +48,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('image')
     parser.add_argument('--circle', action='store_true')
+    parser.add_argument('--guide', action='store_true')
     args = parser.parse_args()
     img = cv2.imread(args.image)
     if img is None:
@@ -66,7 +67,7 @@ if __name__ == '__main__':
     plt.show()
     plt.imshow(img)
     plt.show()
-    L, b, I = poisson_problem(img, mask, img)
+    L, b, I = poisson_problem(img, mask, img if args.guide else None)
     factor = linalg.factorized(L)
     xs = np.stack([factor(b[:,i]) for i in range(b.shape[1])], 1)
     img2 = np.zeros(img.shape)
@@ -75,5 +76,4 @@ if __name__ == '__main__':
     mask = np.expand_dims(mask,2)
     img3 = img * (1-mask) + img2 * mask
     plt.imshow(img3)
-    plt.colorbar()
     plt.show()
