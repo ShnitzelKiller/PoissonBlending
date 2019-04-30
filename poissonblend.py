@@ -78,10 +78,11 @@ if __name__ == '__main__':
         mask = np.zeros(img.shape[0:2])
         mask[img.shape[0]//4:-img.shape[0]//4, img.shape[1]//4:-img.shape[1]//4] = 1
 
-    #plt.imshow(mask)
-    #plt.show()
-    #plt.imshow(img)
-    #plt.show()
+    if args.debug:
+        plt.imshow(mask)
+        plt.show()
+        plt.imshow(img)
+        plt.show()
 
     #solve poisson problem for each color channel (only BCs change)
     L, b, I = poisson_problem(img, mask, img if args.guide else None)
@@ -94,7 +95,7 @@ if __name__ == '__main__':
         res *= res
         res = np.sum(res.flat)
         print('total residual:',res)
-        
+
     #composite and display results
     img2 = np.zeros(img.shape)
     for i, p in enumerate(I):
