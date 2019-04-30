@@ -1,6 +1,6 @@
 # Poisson Image Completion
 
-![cat](cat_square.png)
+![cat](catpatch.png)
 
 ## Usage
 `python poissonblend.py [image] [-h] [--circle] [--guide] [--debug]`
