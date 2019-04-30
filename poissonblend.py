@@ -55,15 +55,20 @@ def poisson_problem(image, mask, guide=None, threshold = 0.5):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('image')
+    parser.add_argument('image', nargs='?')
     parser.add_argument('--circle', action='store_true')
     parser.add_argument('--guide', action='store_true')
     args = parser.parse_args()
-    img = cv2.imread(args.image)
-    if img is None:
-        print('invalid image')
-        exit()
-    img = img[:,:,::-1].astype(np.float)/255
+    if args.image is None:
+        img = np.zeros([256, 256, 3])
+        img[:128,:,0] = 1
+        img[129:,:,1] = 1
+    else:
+        img = cv2.imread(args.image)
+        if img is None:
+            print('invalid image')
+            exit()
+        img = img[:,:,::-1].astype(np.float)/255
 
     if args.circle:
         inds = np.indices(img.shape, dtype=np.float)[0:2,:,:,0] - np.array([[[img.shape[0]//2]], [[img.shape[1]//2]]])
