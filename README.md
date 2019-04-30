@@ -3,9 +3,9 @@
 ![cat](catpatch.png)
 
 ## Dependencies
-Numpy, Scipy, Opencv, Matplotlib
+Numpy, Scipy, Opencv
 ```
-pip install scipy numpy opencv-python matplotlib
+pip install scipy numpy opencv-python
 ```
 
 ## Usage

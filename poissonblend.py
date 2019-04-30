@@ -6,7 +6,6 @@ import argparse
 import cv2
 
 import numpy as np
-import matplotlib.pyplot as plt
 import scipy.sparse as sp
 import scipy.sparse.linalg as linalg
 import argparse
@@ -61,15 +60,14 @@ if __name__ == '__main__':
     parser.add_argument('--debug', action='store_true')
     args = parser.parse_args()
     if args.image is None:
-        img = np.zeros([256, 256, 3])
-        img[:128,:,0] = 1
-        img[129:,:,1] = 1
+        img = np.zeros([256, 256, 3], dtype=np.uint8)
+        img[:128,:,2] = 255
+        img[129:,:,1] = 255
     else:
         img = cv2.imread(args.image)
         if img is None:
             print('invalid image')
             exit()
-        img = img[:,:,::-1].astype(np.float)/255
 
     if args.circle:
         inds = np.indices(img.shape, dtype=np.float)[0:2,:,:,0] - np.array([[[img.shape[0]//2]], [[img.shape[1]//2]]])
@@ -79,13 +77,16 @@ if __name__ == '__main__':
         mask[img.shape[0]//4:-img.shape[0]//4, img.shape[1]//4:-img.shape[1]//4] = 1
 
     if args.debug:
-        plt.imshow(mask)
-        plt.show()
-        plt.imshow(img)
-        plt.show()
+        cv2.imshow('mask', 255*np.stack([mask, mask, mask], 2).astype(np.uint8))
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+        cv2.imshow('original image', img)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
 
     #solve poisson problem for each color channel (only BCs change)
-    L, b, I = poisson_problem(img, mask, img if args.guide else None)
+    floatimg = img.astype(np.float)
+    L, b, I = poisson_problem(floatimg, mask, floatimg if args.guide else None)
     factor = linalg.factorized(L)
     xs = np.stack([factor(b[:,i]) for i in range(b.shape[1])], 1)
 
@@ -101,6 +102,8 @@ if __name__ == '__main__':
     for i, p in enumerate(I):
         img2[p] = xs[i]
     mask = np.expand_dims(mask,2)
-    img3 = img * (1-mask) + img2 * mask
-    plt.imshow(img3)
-    plt.show()
+    img3 = floatimg * (1-mask) + img2 * mask
+    img3 = img3.astype(np.uint8)
+    cv2.imshow('result', img3)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
