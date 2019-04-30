@@ -5,9 +5,15 @@ import scipy.sparse.linalg as linalg
 import argparse
 import cv2
 
+import numpy as np
+import matplotlib.pyplot as plt
+import scipy.sparse as sp
+import scipy.sparse.linalg as linalg
+import argparse
+
 def poisson_problem(image, mask, guide=None, threshold = 0.5):
-    indices = np.full(mask.shape, -1)
-    invdices = []
+    indices = np.full(mask.shape, -1) #map of coordinates inside the domain to unique indices
+    invdices = [] #list of coordinates inside the domain
     ind = 0
     for p,m in np.ndenumerate(mask):
         if m > threshold:
@@ -15,7 +21,9 @@ def poisson_problem(image, mask, guide=None, threshold = 0.5):
             ind += 1
             invdices.append(p)
     N = len(invdices)
-    b = np.zeros([N, image.shape[2]]) #boundary values
+    b = np.zeros([N, image.shape[2]]) #for RHS of equation
+
+    #build sparse matrix
     data = []
     I = []
     J = []
@@ -31,13 +39,14 @@ def poisson_problem(image, mask, guide=None, threshold = 0.5):
                     continue
                 j = indices[(*q,)]
                 if j > -1:
+                    #contribution from inside the domain
                     data.append(1)
                     I.append(i)
                     J.append(j)
                 else:
-                    b[i,:] = -image[(*q,)]
+                    b[i,:] = -image[(*q,)] #boundary term (outside domain)
                 if guide is not None:
-                    b[i,:] -= image[p] - image[(*q,)]
+                    b[i,:] -= image[p] - image[(*q,)] #vector guide term
     L = sp.csc_matrix((data, (I,J)), shape=(N,N))
     return L, b, invdices
 
@@ -63,13 +72,17 @@ if __name__ == '__main__':
         mask = np.zeros(img.shape[0:2])
         mask[img.shape[0]//4:-img.shape[0]//4, img.shape[1]//4:-img.shape[1]//4] = 1
 
-    plt.imshow(mask)
-    plt.show()
-    plt.imshow(img)
-    plt.show()
+    #plt.imshow(mask)
+    #plt.show()
+    #plt.imshow(img)
+    #plt.show()
+
+    #solve poisson problem for each color channel (only BCs change)
     L, b, I = poisson_problem(img, mask, img if args.guide else None)
     factor = linalg.factorized(L)
     xs = np.stack([factor(b[:,i]) for i in range(b.shape[1])], 1)
+
+    #composite and display results
     img2 = np.zeros(img.shape)
     for i, p in enumerate(I):
         img2[p] = xs[i]
