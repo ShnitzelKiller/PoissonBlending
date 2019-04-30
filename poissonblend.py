@@ -58,6 +58,7 @@ if __name__ == '__main__':
     parser.add_argument('image', nargs='?')
     parser.add_argument('--circle', action='store_true')
     parser.add_argument('--guide', action='store_true')
+    parser.add_argument('--debug', action='store_true')
     args = parser.parse_args()
     if args.image is None:
         img = np.zeros([256, 256, 3])
@@ -87,6 +88,13 @@ if __name__ == '__main__':
     factor = linalg.factorized(L)
     xs = np.stack([factor(b[:,i]) for i in range(b.shape[1])], 1)
 
+    if args.debug:
+        ys = np.stack([L.dot(xs[:,i]) for i in range(b.shape[1])], 1)
+        res = b - ys
+        res *= res
+        res = np.sum(res.flat)
+        print('total residual:',res)
+        
     #composite and display results
     img2 = np.zeros(img.shape)
     for i, p in enumerate(I):
