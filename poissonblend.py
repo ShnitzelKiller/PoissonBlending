@@ -5,7 +5,7 @@ import scipy.sparse.linalg as linalg
 import argparse
 import cv2
 
-def laplacian(image, mask, guide=None, threshold = 0.5):
+def poisson_problem(image, mask, guide=None, threshold = 0.5):
     indices = np.full(mask.shape, -1)
     invdices = []
     ind = 0
@@ -66,7 +66,7 @@ if __name__ == '__main__':
     plt.show()
     plt.imshow(img)
     plt.show()
-    L, b, I = laplacian(img, mask, img)
+    L, b, I = poisson_problem(img, mask, img)
     factor = linalg.factorized(L)
     xs = np.stack([factor(b[:,i]) for i in range(b.shape[1])], 1)
     img2 = np.zeros(img.shape)
