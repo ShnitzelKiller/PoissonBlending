@@ -5,21 +5,17 @@ import scipy.sparse.linalg as linalg
 import argparse
 import cv2
 
-def laplacian(image, mask, threshold = 0.5):
+def laplacian(image, mask, guide=None, threshold = 0.5):
     indices = np.full(mask.shape, -1)
     invdices = []
     ind = 0
-    #print('length:',len(values))
     for p,m in np.ndenumerate(mask):
         if m > threshold:
             indices[p] = ind
             ind += 1
             invdices.append(p)
-    #print(indices)
     N = len(invdices)
-    #b = np.zeros([N, image.shape[2]]) #boundary values
-    b = np.zeros(N)
-    #print('index length (should be same):',len(invdices))
+    b = np.zeros([N, image.shape[2]]) #boundary values
     data = []
     I = []
     J = []
@@ -39,10 +35,10 @@ def laplacian(image, mask, threshold = 0.5):
                     I.append(i)
                     J.append(j)
                 else:
-                        b[i] = -image[(*q,)]
-    #print(b)
+                    b[i,:] = -image[(*q,)]
+                if guide is not None:
+                    b[i,:] += image[(*q,)] - image[p]
     L = sp.csc_matrix((data, (I,J)), shape=(N,N))
-    #print(L)
     return L, b, invdices
 
 
@@ -56,24 +52,24 @@ if __name__ == '__main__':
     if img is None:
         print('invalid image')
         exit()
-    img = img[:,:,0].astype(np.float)
+    img = img[:,:,::-1].astype(np.float)/255
 
-    #inds = np.indices(img.shape, dtype=np.float)[0:2,:,:,0] - np.array([[[img.shape[0]//2]], [[img.shape[1]//2]]])
-    inds = np.indices(img.shape, dtype=np.float) - np.array([[[img.shape[0]//2]], [[img.shape[1]//2]]])
+    inds = np.indices(img.shape, dtype=np.float)[0:2,:,:,0] - np.array([[[img.shape[0]//2]], [[img.shape[1]//2]]])
     mask = ((inds[0]*inds[0]+inds[1]*inds[1]) < min(*img.shape[0:2])**2/16).astype(np.float)
+    #mask = np.zeros(img.shape)
+    #mask[img.shape[0]//4:-img.shape[0]//4, img.shape[1]//4:-img.shape[1]//4,:] = 1
+
     plt.imshow(mask)
     plt.show()
     plt.imshow(img)
     plt.show()
-    L, b, I = laplacian(img, mask)
-    print(b)
+    L, b, I = laplacian(img, mask, img)
     factor = linalg.factorized(L)
-    #xs = np.stack([factor(b[:,i]) for i in range(b.shape[1])], 1)
-    x = factor(b)
+    xs = np.stack([factor(b[:,i]) for i in range(b.shape[1])], 1)
     img2 = np.zeros(img.shape)
     for i, p in enumerate(I):
-        img2[p] = x[i]
-    #mask = np.expand_dims(mask,2)
+        img2[p] = xs[i]
+    mask = np.expand_dims(mask,2)
     img3 = img * (1-mask) + img2 * mask
     plt.imshow(img3)
     plt.colorbar()
