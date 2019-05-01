@@ -50,6 +50,27 @@ def poisson_problem(image, mask, guide=None, threshold = 0.5):
     L = sp.csc_matrix((data, (I,J)), shape=(N,N))
     return L, b, invdices
 
+def blend(image, mask, guide=None, threshold=0.5, debug=False):
+    L, b, I = poisson_problem(image, mask, guide, threshold=threshold)
+    factor = linalg.factorized(L)
+    xs = np.stack([factor(b[:,i]) for i in range(b.shape[1])], 1)
+
+    if args.debug:
+        ys = np.stack([L.dot(xs[:,i]) for i in range(b.shape[1])], 1)
+        res = b - ys
+        res *= res
+        res = np.sum(res.flat)
+        print('min value:',np.min(xs.flat))
+        print('max value:',np.max(xs.flat))
+        print('total residual:',res)
+
+    #composite and display results
+    img2 = np.zeros(img.shape)
+    for i, p in enumerate(I):
+        img2[p] = xs[i]
+    mask = np.expand_dims(mask,2)
+    return img * (1-mask) + img2 * mask
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('image', nargs='?')
@@ -109,26 +130,8 @@ if __name__ == '__main__':
             cv2.destroyAllWindows()
 
     #solve poisson problem for each color channel (only BCs change)
-    L, b, I = poisson_problem(img, mask, guide)
-    factor = linalg.factorized(L)
-    xs = np.stack([factor(b[:,i]) for i in range(b.shape[1])], 1)
-
-    if args.debug:
-        ys = np.stack([L.dot(xs[:,i]) for i in range(b.shape[1])], 1)
-        res = b - ys
-        res *= res
-        res = np.sum(res.flat)
-        print('min value:',np.min(xs.flat))
-        print('max value:',np.max(xs.flat))
-        print('total residual:',res)
-
-    #composite and display results
-    img2 = np.zeros(img.shape)
-    for i, p in enumerate(I):
-        img2[p] = xs[i]
-    mask = np.expand_dims(mask,2)
-    img3 = img * (1-mask) + img2 * mask
-    img3 = np.clip(img3, 0, 255).astype(np.uint8)
-    cv2.imshow('result', img3)
+    result = blend(img, mask, guide, debug=args.debug)
+    result = np.clip(result, 0, 255).astype(np.uint8)
+    cv2.imshow('result', result)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
