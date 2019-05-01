@@ -129,7 +129,7 @@ if __name__ == '__main__':
         img2[p] = xs[i]
     mask = np.expand_dims(mask,2)
     img3 = floatimg * (1-mask) + img2 * mask
-    img3 = img3.astype(np.uint8)
+    img3 = np.clip(img3, 0, 255).astype(np.uint8)
     cv2.imshow('result', img3)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
