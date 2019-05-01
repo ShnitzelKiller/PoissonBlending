@@ -1,6 +1,6 @@
 import argparse
 import cv2
-from poissonblend.poissonblend import blend
+from poissonblend.blend import blend
 import numpy as np
 
 if __name__ == '__main__':
