@@ -44,7 +44,7 @@ def poisson_problem(image, mask, guide=None, threshold = 0.5):
                 else:
                     b[i,:] -= image[(*q,)] #boundary term (outside domain)
                 if guide is not None:
-                    b[i,:] -= image[p] - image[(*q,)] #vector guide term
+                    b[i,:] -= guide[p] - guide[(*q,)] #vector guide term
     L = sp.csc_matrix((data, (I,J)), shape=(N,N))
     return L, b, invdices
 
@@ -55,8 +55,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('image', nargs='?')
     parser.add_argument('--circle', action='store_true')
-    parser.add_argument('--guide', action='store_true')
+    parser.add_argument('--guide', nargs='?', default=0, const=1)
     parser.add_argument('--debug', action='store_true')
+    parser.add_argument('--mask')
     args = parser.parse_args()
     if args.image is None:
         img = np.zeros([256, 256, 3], dtype=np.uint8)
@@ -66,14 +67,34 @@ if __name__ == '__main__':
         img = cv2.imread(args.image)
         if img is None:
             print('invalid image')
-            exit()
+            exit(1)
 
-    if args.circle:
-        inds = np.indices(img.shape, dtype=np.float)[0:2,:,:,0] - np.array([[[img.shape[0]//2]], [[img.shape[1]//2]]])
-        mask = ((inds[0]*inds[0]+inds[1]*inds[1]) < min(*img.shape[0:2])**2/16).astype(np.float)
+    if args.mask is None:
+        if args.circle:
+            inds = np.indices(img.shape, dtype=np.float)[0:2,:,:,0] - np.array([[[img.shape[0]//2]], [[img.shape[1]//2]]])
+            mask = ((inds[0]*inds[0]+inds[1]*inds[1]) < min(*img.shape[0:2])**2/16).astype(np.float)
+        else:
+            mask = np.zeros(img.shape[0:2])
+            mask[img.shape[0]//4:-img.shape[0]//4, img.shape[1]//4:-img.shape[1]//4] = 1
     else:
-        mask = np.zeros(img.shape[0:2])
-        mask[img.shape[0]//4:-img.shape[0]//4, img.shape[1]//4:-img.shape[1]//4] = 1
+        mask = cv2.imread(args.mask)
+        if mask is None:
+            print('invalid mask')
+            exit(1)
+        if mask.shape[:2] != img.shape[:2]:
+            print('mask and image must have same dimensions')
+            exit(1)
+        mask = (mask[:,:,0] > 0.5).astype(np.uint8)
+
+    if args.guide == 0:
+        guide = None
+    elif args.guide == 1:
+        guide = img
+    else:
+        guide = cv2.imread(args.guide)
+        if guide is None:
+            print('invalid guide')
+            exit(1)
 
     if args.debug:
         cv2.imshow('mask', 255*np.stack([mask, mask, mask], 2).astype(np.uint8))
@@ -82,10 +103,14 @@ if __name__ == '__main__':
         cv2.imshow('original image', img)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
-
+        if args.guide != 0:
+            cv2.imshow('guide image', guide)
+            cv2.waitKey(0)
+            cv2.destroyAllWindows()
     #solve poisson problem for each color channel (only BCs change)
     floatimg = img.astype(np.float)
-    L, b, I = poisson_problem(floatimg, mask, floatimg if args.guide else None)
+    floatguide = guide.astype(np.float)
+    L, b, I = poisson_problem(floatimg, mask, floatguide)
     factor = linalg.factorized(L)
     xs = np.stack([factor(b[:,i]) for i in range(b.shape[1])], 1)
 
