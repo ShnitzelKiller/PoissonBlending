@@ -1,1 +1,1 @@
-from .poissonblend import blend
+import .blend-image
