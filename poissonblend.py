@@ -42,7 +42,7 @@ def poisson_problem(image, mask, guide=None, threshold = 0.5):
                     I.append(i)
                     J.append(j)
                 else:
-                    b[i,:] = -image[(*q,)] #boundary term (outside domain)
+                    b[i,:] -= image[(*q,)] #boundary term (outside domain)
                 if guide is not None:
                     b[i,:] -= image[p] - image[(*q,)] #vector guide term
     L = sp.csc_matrix((data, (I,J)), shape=(N,N))
@@ -94,6 +94,8 @@ if __name__ == '__main__':
         res = b - ys
         res *= res
         res = np.sum(res.flat)
+        print('min value:',np.min(xs.flat))
+        print('max value:',np.max(xs.flat))
         print('total residual:',res)
 
     #composite and display results
