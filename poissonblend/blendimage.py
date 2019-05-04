@@ -1,6 +1,6 @@
 import argparse
 import cv2
-from poissonblend.blend import blend
+from blend import blend
 import numpy as np
 
 if __name__ == '__main__':
@@ -10,6 +10,8 @@ if __name__ == '__main__':
     parser.add_argument('--guide', nargs='?', default=0, const=1)
     parser.add_argument('--debug', action='store_true')
     parser.add_argument('--mask')
+    parser.add_argument('--offset', type=int, nargs=2, default=(0,0), metavar=('Y','X'))
+    parser.add_argument('--no_boundary_guide', action='store_true', help='guide gradients do not cross mask boundary')
     args = parser.parse_args()
     if args.image is None:
         img = np.zeros([256, 256, 3], dtype=np.uint8)
@@ -32,9 +34,6 @@ if __name__ == '__main__':
         mask = cv2.imread(args.mask)
         if mask is None:
             print('invalid mask')
-            exit(1)
-        if mask.shape[:2] != img.shape[:2]:
-            print('mask and image must have same dimensions: got',mask.shape,'and',img.shape)
             exit(1)
         mask = (mask[:,:,0] > 0.5).astype(np.uint8)
 
@@ -62,8 +61,9 @@ if __name__ == '__main__':
             cv2.destroyAllWindows()
 
     #solve poisson problem for each color channel (only BCs change)
-    result = blend(img, mask, guide, debug=args.debug)
-    result = np.clip(result, 0, 255).astype(np.uint8)
-    cv2.imshow('result', result)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    result = blend(img, mask, guide, offset=args.offset, debug=args.debug, boundary_guide = not args.no_boundary_guide)
+    if result is not None:
+        result = np.clip(result, 0, 255).astype(np.uint8)
+        cv2.imshow('result', result)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
