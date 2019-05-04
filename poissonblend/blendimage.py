@@ -12,6 +12,7 @@ if __name__ == '__main__':
     parser.add_argument('--mask')
     parser.add_argument('--offset', type=int, nargs=2, default=(0,0), metavar=('Y','X'))
     parser.add_argument('--no_boundary_guide', action='store_true', help='guide gradients do not cross mask boundary')
+    parser.add_argument('--output', help='output file')
     args = parser.parse_args()
     if args.image is None:
         img = np.zeros([256, 256, 3], dtype=np.uint8)
@@ -63,7 +64,10 @@ if __name__ == '__main__':
     #solve poisson problem for each color channel (only BCs change)
     result = blend(img, mask, guide, offset=args.offset, debug=args.debug, boundary_guide = not args.no_boundary_guide)
     if result is not None:
-        result = np.clip(result, 0, 255).astype(np.uint8)
-        cv2.imshow('result', result)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
+        if args.output is None:
+            result = np.clip(result, 0, 255).astype(np.uint8)
+            cv2.imshow('result', result)
+            cv2.waitKey(0)
+            cv2.destroyAllWindows()
+        else:
+            cv2.imwrite(args.output, result)
