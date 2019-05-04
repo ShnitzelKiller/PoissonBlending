@@ -45,7 +45,7 @@ def poisson_problem(image, mask, guide=None, threshold = 0.5, boundary_guide = T
     return L, b, invdices
 
 def blend(image, mask, guide=None, offset=(0,0), threshold=0.5, boundary_guide = False, debug=False):
-    if mask.shape != image.shape[:2]:
+    if mask.shape[:2] != image.shape[:2]:
         ends = [offset[0]+mask.shape[0], offset[1]+mask.shape[1]]
         if ends[0] <= image.shape[0] and ends[1] <= image.shape[1] and offset[0] >= 0 and offset[1] >= 0:
             new_offsets = [0,0]
@@ -104,7 +104,8 @@ def blend(image, mask, guide=None, offset=(0,0), threshold=0.5, boundary_guide =
     for i, p in enumerate(I):
         img2[p] = xs[i]
     mask = np.expand_dims(mask,2)
-    if mask.shape != image.shape[:2]:
+    if mask.shape[:2] != image.shape[:2]:
+        print('mask.shape:',mask.shape,'image.shape:',image.shape)
         image_copy = image_orig.astype(np.float)
         image_copy[offset[0]:ends[0],offset[1]:ends[1]] = (image * (1-mask) + img2 * mask)[inv_offsets[0]:inv_ends[0],inv_offsets[1]:inv_ends[1]]
         return image_copy
