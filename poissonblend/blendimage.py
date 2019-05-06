@@ -1,6 +1,6 @@
 import argparse
 import cv2
-from blend import blend
+from .blend import blend
 import numpy as np
 
 if __name__ == '__main__':
