@@ -106,7 +106,7 @@ def blend(image, mask, guide=None, offset=(0,0), threshold=0.5, boundary_guide =
     img2 = np.zeros(image.shape)
     for i, p in enumerate(I):
         img2[p] = xs[i]
-    mask = np.expand_dims(mask,2)
+    mask = np.expand_dims(mask > threshold,2)
     if resized:
         image_copy = image_orig.astype(np.float)
         image_copy[offset[0]:ends[0],offset[1]:ends[1]] = (image * (1-mask) + img2 * mask)[inv_offsets[0]:inv_ends[0],inv_offsets[1]:inv_ends[1]]
