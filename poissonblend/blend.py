@@ -19,14 +19,13 @@ def poisson_problem(image, mask, guide=None, threshold = 0.5, boundary_guide = T
     I = []
     J = []
     for i,p in enumerate(invdices):
-        data.append(-4)
-        I.append(i)
-        J.append(i)
+        neighbors = 4
         for dim in (0, 1):
             for dir in (-1,1):
                 q = [*p]
                 q[dim] += dir
                 if q[dim] < 0 or q[dim] >= mask.shape[dim]:
+                    neighbors -= 1
                     continue
                 j = indices[(*q,)]
                 if j > -1:
@@ -41,6 +40,10 @@ def poisson_problem(image, mask, guide=None, threshold = 0.5, boundary_guide = T
                     if boundary_guide or j > -1:
                         b[i,:] -= guide[p]
                         b[i,:] += guide[(*q,)]
+        data.append(-neighbors)
+        I.append(i)
+        J.append(i)
+
     L = sp.csc_matrix((data, (I,J)), shape=(N,N))
     return L, b, invdices
 
