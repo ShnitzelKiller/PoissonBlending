@@ -1,6 +1,6 @@
 import argparse
 import cv2
-from .blend import blend
+from blend import blend
 import numpy as np
 
 if __name__ == '__main__':
@@ -64,8 +64,8 @@ if __name__ == '__main__':
     #solve poisson problem for each color channel (only BCs change)
     result = blend(img, mask, guide, offset=args.offset, debug=args.debug, boundary_guide = not args.no_boundary_guide)
     if result is not None:
+        result = np.clip(result, 0, 255).astype(np.uint8)
         if args.output is None:
-            result = np.clip(result, 0, 255).astype(np.uint8)
             cv2.imshow('result', result)
             cv2.waitKey(0)
             cv2.destroyAllWindows()
